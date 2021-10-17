@@ -3,10 +3,9 @@ from http import HTTPStatus
 
 import click
 import httpx
-from rich.pretty import pprint
-from rich.traceback import install
+import sys
+from pprint import pprint
 
-install()
 
 MAX_CONCURRENCY = 5
 
@@ -35,7 +34,7 @@ async def get_forked_repos(
         res = await client.get(url, headers=headers)
 
         if not res.status_code == HTTPStatus.OK:
-            raise httpx.HTTPError(f"{res.json()}")
+            raise Exception(f"{res.json()}")
 
         results = res.json()
 
@@ -149,18 +148,26 @@ async def orchestrator(username: str, token: str) -> None:
     await queue.join()
 
 
-@click.command()
+@click.command('fork-purger')
 @click.option(
     "--username",
-    prompt="Github Username",
+    prompt="\nGithub Username",
     help="Your Github username.",
 )
 @click.option(
     "--token",
     prompt="Github Access Token",
     help="Your Github access token with delete permission.",
+    required=True
 )
-def cli(username, token):
+@click.option(
+    "--debug/--no-debug",
+    default=False,
+    help="See full traceback in case of HTTP error.",
+)
+def cli(username, token, debug):
+    if debug is False:
+        sys.tracebacklimit = 0
     asyncio.run(orchestrator(username, token))
 
 
