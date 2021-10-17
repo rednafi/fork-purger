@@ -1,11 +1,11 @@
 import asyncio
+import sys
+import textwrap
 from http import HTTPStatus
+from pprint import pformat, pprint
 
 import click
 import httpx
-import sys
-from pprint import pprint
-
 
 MAX_CONCURRENCY = 5
 
@@ -34,7 +34,7 @@ async def get_forked_repos(
         res = await client.get(url, headers=headers)
 
         if not res.status_code == HTTPStatus.OK:
-            raise Exception(f"{res.json()}")
+            raise Exception(f"{pformat(res.json())}")
 
         results = res.json()
 
@@ -148,27 +148,40 @@ async def orchestrator(username: str, token: str) -> None:
     await queue.join()
 
 
-@click.command('fork-purger')
+@click.command("fork-purger")
 @click.option(
     "--username",
-    prompt="\nGithub Username",
+    prompt="Github Username",
     help="Your Github username.",
 )
 @click.option(
     "--token",
     prompt="Github Access Token",
     help="Your Github access token with delete permission.",
-    required=True
+    required=True,
 )
 @click.option(
     "--debug/--no-debug",
     default=False,
     help="See full traceback in case of HTTP error.",
 )
-def cli(username, token, debug):
+def _cli(username, token, debug):
     if debug is False:
         sys.tracebacklimit = 0
+
     asyncio.run(orchestrator(username, token))
+
+
+def cli():
+    greet_text = textwrap.dedent(
+        """
+            +-+-+-+-+ +-+-+-+-+-+-+
+            |F|o|r|k| |P|u|r|g|e|r|
+            +-+-+-+-+ +-+-+-+-+-+-+
+        """
+    )
+    click.echo(greet_text)
+    _cli()
 
 
 if __name__ == "__main__":
