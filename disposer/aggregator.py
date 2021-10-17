@@ -16,7 +16,7 @@ async def get_forked_repos(
     per_page: int = 100,
 ) -> list[str]:
 
-    """Get forked repos in a page."""
+    """Get the URLs of forked repos in a page."""
 
     url = (
         f"https://api.github.com/users/{username}/repos"
@@ -63,7 +63,7 @@ async def enqueue(queue: asyncio.Queue[str], event: asyncio.Event) -> None:
     event : asyncio.Event
         Async event for coroutine synchronization.
     """
-    
+
     page = 1
     while True:
         forked_urls = await get_forked_repos(username="rednafi", page=page)
@@ -106,6 +106,11 @@ async def dequeue(queue: asyncio.Queue[str], event: asyncio.Event) -> None:
 
 
 async def orchestrator() -> None:
+    """
+    Coordinates the enqueue and dequeue functions in a
+    producer-consumer setup.
+    """
+
     queue = asyncio.Queue()
     event = asyncio.Event()
 
