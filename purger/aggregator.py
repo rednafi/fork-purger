@@ -25,7 +25,7 @@ async def get_forked_repos(
 
     headers = {
         "Accept": "application/vnd.github.v3+json",
-        "Authorization": "Token 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",
+        "Authorization": "Token ''",
     }
 
     forked_urls = []  # type: list[str]
