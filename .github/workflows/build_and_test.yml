@@ -24,10 +24,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install the test dependencies
+      - name: Install the dependencies
         run: |
           echo "Upgrading pip ...."
           python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
           python -m pip install -r requirements-dev.txt
 
       - name: Check linter
