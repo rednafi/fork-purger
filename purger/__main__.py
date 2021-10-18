@@ -48,8 +48,18 @@ async def get_forked_repos(
     return forked_urls
 
 
-async def delete_forked_repo(url: str) -> None:
-    pprint(f"deleted!{url}")
+
+async def delete_forked_repo(url: str, token: str) -> None:
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": f"Token {token}",
+    }
+
+    client = httpx.AsyncClient(http2=True)
+
+    async with client:
+        click.echo(f"Deleting...: {url}")
+        await client.delete(url, headers=headers)
 
 
 async def enqueue(
@@ -72,17 +82,27 @@ async def enqueue(
 
     page = 1
     while True:
-        forked_urls = await get_forked_repos(username=username, token=token, page=page)
+        forked_urls = await get_forked_repos(
+            username=username,
+            token=token,
+            page=page,
+        )
+        if not forked_urls:
+            break
 
         for forked_url in forked_urls:
             await queue.put(forked_url)
 
         page += 1
         event.set()
-        await asyncio.sleep(0)
+        await asyncio.sleep(0.5)
 
 
-async def dequeue(queue: asyncio.Queue[str], event: asyncio.Event) -> None:
+async def dequeue(
+    queue: asyncio.Queue[str],
+    event: asyncio.Event,
+    token: str,
+) -> None:
     """
     Collects forked repo URLs from the async queue and deletes
     them concurrently.
@@ -98,12 +118,9 @@ async def dequeue(queue: asyncio.Queue[str], event: asyncio.Event) -> None:
     while True:
         await event.wait()
 
-        if not queue.empty():
-            forked_url = await queue.get()
-        else:
-            break
+        forked_url = await queue.get()
 
-        await delete_forked_repo(forked_url)
+        await delete_forked_repo(forked_url, token)
 
         # Yields control to the event loop.
         await asyncio.sleep(0)
@@ -123,7 +140,8 @@ async def orchestrator(username: str, token: str) -> None:
     enqueue_task = asyncio.create_task(enqueue(queue, event, username, token))
 
     dequeue_tasks = [
-        asyncio.create_task(dequeue(queue, event)) for _ in range(MAX_CONCURRENCY)
+        asyncio.create_task(dequeue(queue, event, token))
+        for _ in range(MAX_CONCURRENCY)
     ]
 
     dequeue_tasks.append(enqueue_task)
