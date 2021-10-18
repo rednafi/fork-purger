@@ -1,4 +1,4 @@
-name: Build & Test Epilog
+name: Build & Test Fork Purger
 
 on:
   push:
