@@ -3,6 +3,7 @@ from http import HTTPStatus
 from unittest.mock import patch  # Requires Python 3.8+.
 
 import pytest
+from click.testing import CliRunner
 from httpx import Response
 
 import purger
@@ -158,3 +159,63 @@ async def test_deque_ok(mock_delete_forked_repo):
     assert result is None
     assert queue.qsize() == 0
     assert event.is_set() is True
+
+
+@pytest.mark.asyncio
+@patch("purger.asyncio.Queue", autospec=True)
+@patch("purger.asyncio.Event", autospec=True)
+@patch("purger.asyncio.create_task", autospec=True)
+@patch("purger.asyncio.wait", autospec=True)
+async def test_orchestrator_ok(
+    mock_wait,
+    mock_create_task,
+    mock_event,
+    mock_queue,
+):
+
+    # Mocked futures.
+    done_future = asyncio.Future()
+    done_future.set_result(42)
+    await done_future
+
+    pending_future = asyncio.Future()
+    done_futures, pending_futures = [done_future], [pending_future]
+
+    mock_wait.return_value = (done_futures, pending_futures)
+
+    # Called the mocked function.
+    await purger.orchestrator(
+        username="dummy_username",
+        token="dummy_token",
+        delete=False,
+    )
+
+    # Assert.
+    mock_queue.assert_called_once()
+    mock_queue().join.assert_called()
+    mock_event.assert_called_once()
+    mock_create_task.assert_called()
+    mock_wait.assert_awaited()
+
+
+@patch("purger.asyncio.run")
+def test_cli(mock_asyncio_run):
+    runner = CliRunner()
+
+    # Test cli without any arguments.
+    result = runner.invoke(purger._cli, [])
+    assert result.exit_code != 0
+
+    result = runner.invoke(
+        purger._cli,
+        ["--username=dummy_username", "--token=dummy_token"],
+    )
+    assert result.exit_code == 0
+    mock_asyncio_run.assert_called_once()
+
+    result = runner.invoke(
+        purger._cli,
+        ["--username=dummy_username", "--token=dummy_token", "--no-debug"],
+    )
+    assert result.exit_code == 0
+    mock_asyncio_run.assert_called()

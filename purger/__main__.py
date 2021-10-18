@@ -87,6 +87,12 @@ async def enqueue(
         Async queue where the forked repo URLs are injected.
     event : asyncio.Event
         Async event for coroutine synchronization.
+    username : str
+        Github username.
+    token : str
+        Github access token.
+    stop_after : int | None
+        Stop the while loop after `stop_after` iterations.
     """
 
     page = 1
@@ -127,6 +133,12 @@ async def dequeue(
         Async queue where the forked repo URLs are popped off.
     event : asyncio.Event
         Async event for coroutine synchronization.
+    token : str
+        Github access token.
+    delete : bool
+        Whether to delete the forked repos or not.
+    stop_after : asyncio.Event
+        Stop the while loop after `stop_after` iterations.
     """
     cnt = 0
     while True:
