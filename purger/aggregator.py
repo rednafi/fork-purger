@@ -1,6 +1,7 @@
 import asyncio
 from http import HTTPStatus
 
+import click
 import httpx
 from rich.pretty import pprint
 from rich.traceback import install
@@ -12,6 +13,7 @@ MAX_CONCURRENCY = 5
 
 async def get_forked_repos(
     username: str,
+    token: str,
     page: int = 1,
     per_page: int = 100,
 ) -> list[str]:
@@ -25,7 +27,7 @@ async def get_forked_repos(
 
     headers = {
         "Accept": "application/vnd.github.v3+json",
-        "Authorization": "Token ''",
+        "Authorization": f"Token {token}",
     }
 
     forked_urls = []  # type: list[str]
@@ -51,7 +53,12 @@ async def delete_forked_repo(url: str) -> None:
     pprint(f"deleted!{url}")
 
 
-async def enqueue(queue: asyncio.Queue[str], event: asyncio.Event) -> None:
+async def enqueue(
+    queue: asyncio.Queue[str],
+    event: asyncio.Event,
+    username: str,
+    token: str,
+) -> None:
     """
     Collects the URLs of all the forked repos and inject them into an
     async queue.
@@ -66,7 +73,7 @@ async def enqueue(queue: asyncio.Queue[str], event: asyncio.Event) -> None:
 
     page = 1
     while True:
-        forked_urls = await get_forked_repos(username="rednafi", page=page)
+        forked_urls = await get_forked_repos(username=username, token=token, page=page)
 
         for forked_url in forked_urls:
             await queue.put(forked_url)
@@ -105,28 +112,57 @@ async def dequeue(queue: asyncio.Queue[str], event: asyncio.Event) -> None:
         queue.task_done()
 
 
-async def orchestrator() -> None:
+async def orchestrator(username: str, token: str) -> None:
     """
     Coordinates the enqueue and dequeue functions in a
     producer-consumer setup.
     """
 
-    queue = asyncio.Queue()
-    event = asyncio.Event()
+    queue = asyncio.Queue()  # type: asyncio.Queue[str]
+    event = asyncio.Event()  # type: asyncio.Event
 
-    _ = asyncio.create_task(enqueue(queue, event))
+    enqueue_task = asyncio.create_task(enqueue(queue, event, username, token))
 
     dequeue_tasks = [
         asyncio.create_task(dequeue(queue, event)) for _ in range(MAX_CONCURRENCY)
     ]
 
-    await asyncio.gather(*dequeue_tasks)
+    dequeue_tasks.append(enqueue_task)
 
-    for t in dequeue_tasks:
+    done, pending = await asyncio.wait(
+        dequeue_tasks,
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    for fut in done:
+        try:
+            exc = fut.exception()
+            if exc:
+                raise exc
+        except asyncio.exceptions.InvalidStateError:
+            pass
+
+    for t in pending:
         t.cancel()
 
     # This runs the 'enqueue' function implicitly.
     await queue.join()
 
 
-asyncio.run(orchestrator())
+@click.command()
+@click.option(
+    "--username",
+    prompt="Github Username",
+    help="Your Github username.",
+)
+@click.option(
+    "--token",
+    prompt="Github Access Token",
+    help="Your Github access token with delete permission.",
+)
+def cli(username, token):
+    asyncio.run(orchestrator(username, token))
+
+
+if __name__ == "__main__":
+    cli()
