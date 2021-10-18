@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import sys
 import textwrap
@@ -61,7 +62,11 @@ async def delete_forked_repo(url: str, token: str, delete: bool = False) -> None
 
     async with client:
         print(f"Deleting... {url}")
-        await client.delete(url, headers=headers)
+        res = await client.delete(url, headers=headers)
+
+        status_code = res.status_code
+        if not status_code == HTTPStatus.OK:
+            raise Exception(f"HTTP error: {res.status_code}.")
 
 
 async def enqueue(
@@ -69,6 +74,7 @@ async def enqueue(
     event: asyncio.Event,
     username: str,
     token: str,
+    stop_after: int | None = None,
 ) -> None:
     """
     Collects the URLs of all the forked repos and inject them into an
@@ -95,10 +101,12 @@ async def enqueue(
         for forked_url in forked_urls:
             await queue.put(forked_url)
 
+        if stop_after == page:
+            break
+
         page += 1
         event.set()
         await asyncio.sleep(0.3)
-
 
 async def dequeue(
     queue: asyncio.Queue[str],
