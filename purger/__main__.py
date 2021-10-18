@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import asyncio
 import sys
 import textwrap
@@ -108,11 +109,13 @@ async def enqueue(
         event.set()
         await asyncio.sleep(0.3)
 
+
 async def dequeue(
     queue: asyncio.Queue[str],
     event: asyncio.Event,
     token: str,
     delete: bool,
+    stop_after: int | None = None,
 ) -> None:
     """
     Collects forked repo URLs from the async queue and deletes
@@ -125,7 +128,7 @@ async def dequeue(
     event : asyncio.Event
         Async event for coroutine synchronization.
     """
-
+    cnt = 0
     while True:
         await event.wait()
 
@@ -137,6 +140,10 @@ async def dequeue(
         await asyncio.sleep(0)
 
         queue.task_done()
+        cnt += 1
+
+        if stop_after and stop_after == cnt:
+            break
 
 
 async def orchestrator(username: str, token: str, delete: bool) -> None:

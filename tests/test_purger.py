@@ -1,6 +1,6 @@
 import asyncio
 from http import HTTPStatus
-from unittest.mock import AsyncMock, patch  # Requires Python 3.8+.
+from unittest.mock import patch  # Requires Python 3.8+.
 
 import pytest
 from httpx import Response
@@ -123,7 +123,38 @@ async def test_enqueue_ok(mock_async_get):
     queue = asyncio.Queue()
     event = asyncio.Event()
 
-    result = await purger.enqueue(queue, event, "dummy_username", "dummy_token", 1)
-    assert result is None 
+    result = await purger.enqueue(
+        queue=queue,
+        event=event,
+        username="dummy_username",
+        token="dummy_token",
+        stop_after=1,
+    )
+    assert result is None
     assert queue.qsize() == 2
     assert event.is_set() is False
+
+
+@pytest.mark.asyncio
+@patch("purger.delete_forked_repo", autospec=True)
+async def test_deque_ok(mock_delete_forked_repo):
+    mock_delete_forked_repo.return_value = None
+
+    queue = asyncio.Queue()
+    event = asyncio.Event()
+    queue.put_nowait("https://dummy_url_1.com")
+    queue.put_nowait("https://dummy_url_2.com")
+
+    event.set()
+
+    result = await purger.dequeue(
+        queue=queue,
+        event=event,
+        token="dummy_token",
+        delete=False,
+        stop_after=2,
+    )
+
+    assert result is None
+    assert queue.qsize() == 0
+    assert event.is_set() is True
