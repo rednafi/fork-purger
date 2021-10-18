@@ -219,3 +219,10 @@ def test_cli(mock_asyncio_run):
     )
     assert result.exit_code == 0
     mock_asyncio_run.assert_called()
+
+    result = runner.invoke(
+        purger._cli,
+        ["--username=dummy_username", "--token=dummy_token", "--delete"],
+    )
+    assert result.exit_code == 0
+    mock_asyncio_run.assert_called()
