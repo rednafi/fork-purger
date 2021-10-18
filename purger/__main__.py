@@ -2,7 +2,7 @@ import asyncio
 import sys
 import textwrap
 from http import HTTPStatus
-from pprint import pformat, pprint
+from pprint import pformat
 
 import click
 import httpx
@@ -48,17 +48,19 @@ async def get_forked_repos(
     return forked_urls
 
 
-
-async def delete_forked_repo(url: str, token: str) -> None:
+async def delete_forked_repo(url: str, token: str, delete: bool = False) -> None:
     headers = {
         "Accept": "application/vnd.github.v3+json",
         "Authorization": f"Token {token}",
     }
+    if not delete:
+        print(url)
+        return None
 
     client = httpx.AsyncClient(http2=True)
 
     async with client:
-        click.echo(f"Deleting...: {url}")
+        print(f"Deleting... {url}")
         await client.delete(url, headers=headers)
 
 
@@ -95,13 +97,14 @@ async def enqueue(
 
         page += 1
         event.set()
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.3)
 
 
 async def dequeue(
     queue: asyncio.Queue[str],
     event: asyncio.Event,
     token: str,
+    delete: bool,
 ) -> None:
     """
     Collects forked repo URLs from the async queue and deletes
@@ -120,7 +123,7 @@ async def dequeue(
 
         forked_url = await queue.get()
 
-        await delete_forked_repo(forked_url, token)
+        await delete_forked_repo(forked_url, token, delete)
 
         # Yields control to the event loop.
         await asyncio.sleep(0)
@@ -128,7 +131,7 @@ async def dequeue(
         queue.task_done()
 
 
-async def orchestrator(username: str, token: str) -> None:
+async def orchestrator(username: str, token: str, delete: bool) -> None:
     """
     Coordinates the enqueue and dequeue functions in a
     producer-consumer setup.
@@ -140,7 +143,7 @@ async def orchestrator(username: str, token: str) -> None:
     enqueue_task = asyncio.create_task(enqueue(queue, event, username, token))
 
     dequeue_tasks = [
-        asyncio.create_task(dequeue(queue, event, token))
+        asyncio.create_task(dequeue(queue, event, token, delete))
         for _ in range(MAX_CONCURRENCY)
     ]
 
@@ -169,12 +172,11 @@ async def orchestrator(username: str, token: str) -> None:
 @click.command("fork-purger")
 @click.option(
     "--username",
-    prompt="Github Username",
     help="Your Github username.",
+    required=True,
 )
 @click.option(
     "--token",
-    prompt="Github Access Token",
     help="Your Github access token with delete permission.",
     required=True,
 )
@@ -183,11 +185,25 @@ async def orchestrator(username: str, token: str) -> None:
     default=False,
     help="See full traceback in case of HTTP error.",
 )
-def _cli(username, token, debug):
+@click.option(
+    "--delete",
+    is_flag=True,
+    default=False,
+    help="Delete the forked repos.",
+)
+def _cli(username, token, debug, delete):
     if debug is False:
         sys.tracebacklimit = 0
 
-    asyncio.run(orchestrator(username, token))
+    if not delete:
+        click.echo("These forks will be deleted:")
+        click.echo("=============================\n")
+
+    elif delete:
+        click.echo("Deleting forked repos:")
+        click.echo("=======================\n")
+
+    asyncio.run(orchestrator(username, token, delete))
 
 
 def cli():
