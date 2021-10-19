@@ -26,19 +26,11 @@ jobs:
 
       - name: Install the dependencies
         run: |
-          echo "Upgrading pip ...."
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -r requirements-dev.txt
-
+          make install-deps
+          
       - name: Check linter
         run: |
-          echo "Checking black formatting..."
-          python3 -m black --check .
-          echo "Checking isort formatting..."
-          python3 -m isort --check .
-          echo "Checking flake8 formatting..."
-          python3 -m flake8 .
+          make lint-check
 
       - name: Run the tests
         run: |

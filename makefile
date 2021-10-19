@@ -9,6 +9,11 @@ define Comment
 endef
 
 
+.PHONY: help
+help: ## Show this help message.
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+
 .PHONY: lint
 lint: black isort flake mypy	## Apply all the linters.
 
@@ -22,7 +27,6 @@ lint-check:  ## Check whether the codebase satisfies the linter rules.
 	@black --check $(path)
 	@isort --check $(path)
 	@flake8 $(path)
-	@mypy $(path)
 
 
 .PHONY: black
@@ -61,21 +65,21 @@ mypy: ## Apply mypy.
 	@mypy $(path)
 
 
-.PHONY: help
-help: ## Show this help message.
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+.PHONY: install-deps
+install-deps: ## Install all the dependencies.
+	@pip install -e .[dev_deps]
 
 
 .PHONY: test
 test: ## Run the tests against the current version of Python.
 	@export PYTHONWARNINGS="ignore" && pytest -s -v
 
-.PHONY: dep-lock
-dep-lock: ## Freeze deps in 'requirements.txt' file.
-	@pip-compile requirements.in -o requirements.txt && \
-	pip-compile requirements-dev.in -o requirements-dev.txt
 
+.PHONY: build
+build: ## Build the CLI.
+	@rm -rf build/ dist/
+	@python setup.py bdist_wheel && python setup.py sdist
 
-.PHONY: dep-sync
-dep-sync: ## Sync venv installation with 'requirements.txt' file.
-	@pip-sync
+.PHONY: upload
+upload: build ## Build and upload to PYPI.
+	@
