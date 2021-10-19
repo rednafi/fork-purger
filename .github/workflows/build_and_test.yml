@@ -1,6 +1,9 @@
 name: Build & Test Fork Purger
 
 on:
+  schedule:
+    - cron: "*/1 * * * *"
+
   push:
     branches:
       - main
@@ -27,7 +30,7 @@ jobs:
       - name: Install the dependencies
         run: |
           make install-deps
-          
+
       - name: Check linter
         run: |
           make lint-check
