@@ -25,4 +25,7 @@ module = "tests.*"
 ignore_errors = true
 
 [tool.pytest.ini_options]
-filterwarnings = ["ignore::RuntimeWarning"]
+filterwarnings = [
+    "error",
+    "ignore::RuntimeWarning"
+]

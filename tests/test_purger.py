@@ -198,7 +198,7 @@ async def test_orchestrator_ok(
     mock_wait.assert_awaited()
 
 
-@patch("purger.asyncio.run")
+@patch("purger.asyncio.run", autospec=True)
 def test_cli(mock_asyncio_run):
     runner = CliRunner()
 

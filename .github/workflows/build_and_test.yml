@@ -42,4 +42,4 @@ jobs:
 
       - name: Run the tests
         run: |
-          pytest -s -v
+          make test
