@@ -20,7 +20,50 @@
 
 ## Exploration
 
-Under construction...
+* Create and collect your Github [user access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
+
+* Inspect the `--help` menu. Run:
+
+    ```
+    fork-purger --help
+    ```
+
+    This will print the following:
+
+    ```
+    +-+-+-+-+ +-+-+-+-+-+-+
+    |F|o|r|k| |P|u|r|g|e|r|
+    +-+-+-+-+ +-+-+-+-+-+-+
+
+    Usage: fork-purger [OPTIONS]
+
+    Options:
+    --username TEXT       Your Github username.  [required]
+    --token TEXT          Your Github access token with delete permission.
+                            [required]
+    --debug / --no-debug  See full traceback in case of HTTP error.
+    --delete              Delete the forked repos.
+    --help                Show this message and exit.
+
+    ```
+
+* By default, `fork-purger` runs in dry mode and doesn't actually do anything other than just listing the repositories about to be deleted. Run:
+
+    ```
+    fork-purger --username <gh-username> --token <gh-access-token>
+    ```
+* To delete the listed repositories, run the CLI with the `--delete` flag:
+
+    ```
+    fork-purger --username <gh-username> --token <gh-access-token> --delete
+    ```
+
+* In case of exceptions, if you need more information, you can run the CLI with the `--debug` flag. This will print out the Python stacktrace on stdout.
+
+    ```
+    fork-purger --username <gh-username> --token <gh-access-token> --delete --debug
+    ```
+
 
 
 <div align="center">
