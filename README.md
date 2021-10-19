@@ -46,7 +46,7 @@
     --help                Show this message and exit.
     ```
 
-* By default, `fork-purger` runs in dry mode and doesn't do anything other than just listing the repositories about to be deleted. Run:
+* By default, `fork-purger` runs in dry mode and doesn't do anything other than just listing the repositories that are about to be deleted. Run:
 
     ```
     fork-purger --username <gh-username> --token <gh-access-token>
