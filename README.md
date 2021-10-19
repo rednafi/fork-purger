@@ -44,7 +44,6 @@
     --debug / --no-debug  See full traceback in case of HTTP error.
     --delete              Delete the forked repos.
     --help                Show this message and exit.
-
     ```
 
 * By default, `fork-purger` runs in dry mode and doesn't actually do anything other than just listing the repositories about to be deleted. Run:
