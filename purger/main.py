@@ -197,7 +197,7 @@ async def orchestrator(username: str, token: str, delete: bool) -> None:
     await queue.join()
 
 
-@click.command("fork-purger")
+@click.command()
 @click.option(
     "--username",
     help="Your Github username.",
