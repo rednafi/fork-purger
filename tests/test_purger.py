@@ -1,4 +1,6 @@
 import asyncio
+import importlib
+import textwrap
 from http import HTTPStatus
 from unittest.mock import patch  # Requires Python 3.8+.
 
@@ -6,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 from httpx import Response
 
-import purger
+import purger.main as purger
 
 
 @pytest.mark.asyncio
@@ -137,8 +139,8 @@ async def test_enqueue_ok(mock_async_get):
 
 
 @pytest.mark.asyncio
-@patch("purger.delete_forked_repo", autospec=True)
-async def test_deque_ok(mock_delete_forked_repo):
+@patch("purger.main.delete_forked_repo", autospec=True)
+async def test_dequeue_ok(mock_delete_forked_repo):
     mock_delete_forked_repo.return_value = None
 
     queue = asyncio.Queue()
@@ -162,15 +164,21 @@ async def test_deque_ok(mock_delete_forked_repo):
 
 
 @pytest.mark.asyncio
-@patch("purger.asyncio.Queue", autospec=True)
-@patch("purger.asyncio.Event", autospec=True)
-@patch("purger.asyncio.create_task", autospec=True)
-@patch("purger.asyncio.wait", autospec=True)
+@patch("purger.main.MAX_CONCURRENCY", default=1)
+@patch("purger.main.enqueue", autospec=True)
+@patch("purger.main.dequeue", autospec=True)
+@patch("purger.main.asyncio.Queue", autospec=True)
+@patch("purger.main.asyncio.Event", autospec=True)
+@patch("purger.main.asyncio.create_task", autospec=True)
+@patch("purger.main.asyncio.wait", autospec=True)
 async def test_orchestrator_ok(
     mock_wait,
     mock_create_task,
     mock_event,
     mock_queue,
+    mock_dequeue,
+    mock_enqueue,
+    _,
 ):
 
     # Mocked futures.
@@ -192,14 +200,17 @@ async def test_orchestrator_ok(
 
     # Assert.
     mock_queue.assert_called_once()
-    mock_queue().join.assert_called()
+    mock_queue().join.assert_called_once()
     mock_event.assert_called_once()
     mock_create_task.assert_called()
-    mock_wait.assert_awaited()
+    mock_wait.assert_awaited_once()
+    mock_enqueue.assert_called_once()
+    mock_dequeue.assert_called_once()
 
 
-@patch("purger.asyncio.run", autospec=True)
-def test_cli(mock_asyncio_run):
+@patch("purger.main.orchestrator", autospec=True)
+@patch("purger.main.asyncio.run", autospec=True)
+def test__cli(mock_asyncio_run, mock_orchestrator):
     runner = CliRunner()
 
     # Test cli without any arguments.
@@ -211,6 +222,7 @@ def test_cli(mock_asyncio_run):
         ["--username=dummy_username", "--token=dummy_token"],
     )
     assert result.exit_code == 0
+    mock_orchestrator.assert_called_once()
     mock_asyncio_run.assert_called_once()
 
     result = runner.invoke(
@@ -218,6 +230,7 @@ def test_cli(mock_asyncio_run):
         ["--username=dummy_username", "--token=dummy_token", "--no-debug"],
     )
     assert result.exit_code == 0
+    mock_orchestrator.assert_called()
     mock_asyncio_run.assert_called()
 
     result = runner.invoke(
@@ -225,4 +238,32 @@ def test_cli(mock_asyncio_run):
         ["--username=dummy_username", "--token=dummy_token", "--delete"],
     )
     assert result.exit_code == 0
+    mock_orchestrator.assert_called()
     mock_asyncio_run.assert_called()
+
+
+@patch("purger.main.click.command", autospec=True)
+@patch("purger.main.click.option", autospec=True)
+@patch("purger.main._cli", autospec=True)
+def test_dummy_cli(mock_cli, mock_click_option, mock_click_command, capsys):
+
+    # Decorators are executed during import time. So for the 'patch' to work,
+    # the module needs to be reloaded.
+    importlib.reload(purger)
+
+    # Since we're invoking the cli function without any parameter, it should
+    # exit with an error code > 0.
+    purger.cli()
+    err, out = capsys.readouterr()
+
+    # Test greeting message.
+    greet_msg = textwrap.dedent(
+        """
+                +-+-+-+-+ +-+-+-+-+-+-+
+                |F|o|r|k| |P|u|r|g|e|r|
+                +-+-+-+-+ +-+-+-+-+-+-+
+        """
+    )
+
+    assert greet_msg in err
+    assert out == ""
