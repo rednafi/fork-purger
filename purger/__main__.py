@@ -63,10 +63,11 @@ async def delete_forked_repo(url: str, token: str, delete: bool = False) -> None
 
     async with client:
         print(f"Deleting... {url}")
+
         res = await client.delete(url, headers=headers)
 
         status_code = res.status_code
-        if not status_code == HTTPStatus.OK:
+        if status_code not in (HTTPStatus.OK, HTTPStatus.NO_CONTENT):
             raise Exception(f"HTTP error: {res.status_code}.")
 
 
