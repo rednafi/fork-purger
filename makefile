@@ -78,7 +78,7 @@ test: ## Run the tests against the current version of Python.
 .PHONY: build
 build: ## Build the CLI.
 	@rm -rf build/ dist/
-	@python setup.py bdist_wheel sdist
+	@python -m build
 
 .PHONY: upload
 upload: build ## Build and upload to PYPI.
