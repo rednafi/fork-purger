@@ -95,6 +95,14 @@
     fork-purger --username <gh-username> --token <gh-access-token> --delete --debug
     ```
 
+## Architecture
+
+Internally, `fork-purger` leverages Python's coroutine objects to collect the URLs of the forked repositories from GitHub and delete them asynchronously. Asyncio coordinates this workflow in a producer-consumer orientation which is choreographed in the `orchestrator` function. The following diagram can be helpful to understand how the entire workflow operates:
+
+![fork-purger](https://user-images.githubusercontent.com/30027932/138365012-58bf33fc-dc3c-42ef-bc74-e93850a0f5ff.png)
+
+Here, the square boxes are async functions and each of them is dedicated to carrying out a single task. In the first step, an async function calls a GitHub GET API to collect the URLs of the forked repositories. The `enqueue` function then aggregates those URLs and puts them in a Queue. The `dequeue` function pops the URLs from the Queue and sends them to multiple worker functions to achieve concurrency. Finally, the worker function leverages a DELETE API to delete the forked repositories.
+
 <div align="center">
 <i> ✨ 🍰 ✨ </i>
 </div>
