@@ -99,7 +99,7 @@
 
 Internally, `fork-purger` leverages Python's coroutine objects to collect the URLs of the forked repositories from GitHub and delete them asynchronously. Asyncio coordinates this workflow in a producer-consumer orientation which is choreographed in the `orchestrator` function. The following diagram can be helpful to understand how the entire workflow operates:
 
-![fork-purger](https://user-images.githubusercontent.com/30027932/138367712-3d85f846-2b13-474d-ab88-87974177e7ec.png)
+![fork-purger](https://user-images.githubusercontent.com/30027932/138368282-4b9022dc-9a3f-4ca5-8270-5dd61a56255b.png)
 
 
 Here, the square boxes are async functions and each one of them is dedicated to carrying out a single task.
