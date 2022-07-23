@@ -48,7 +48,7 @@ jobs:
 
   pypi-upload:
     runs-on : ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    if: startsWith(github.ref, 'refs/tags/v*')
     steps:
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
