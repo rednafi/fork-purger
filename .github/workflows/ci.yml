@@ -1,4 +1,4 @@
-name: Build & Test Fork Purger
+name: CI
 
 on:
   schedule:
@@ -27,6 +27,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }} }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install the dependencies
         run: |
           make install-deps
@@ -38,3 +45,13 @@ jobs:
       - name: Run the tests
         run: |
           make test
+
+  pypi-upload:
+    runs-on : ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    steps:
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.FORK_PURGER_PYPI_TOKEN }}

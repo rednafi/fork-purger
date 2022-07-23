@@ -219,7 +219,7 @@ async def orchestrator(username: str, token: str, delete: bool) -> None:
     default=False,
     help="Delete the forked repos.",
 )
-def _cli(username, token, debug, delete):
+def _cli(username: str, token: str, debug: bool, delete: bool) -> None:
     if debug is False:
         sys.tracebacklimit = 0
 
@@ -234,7 +234,7 @@ def _cli(username, token, debug, delete):
     asyncio.run(orchestrator(username, token, delete))
 
 
-def cli():
+def cli() -> None:
     greet_text = textwrap.dedent(
         """
             +-+-+-+-+ +-+-+-+-+-+-+
