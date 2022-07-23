@@ -5,10 +5,8 @@ atomic = true
 extend_skip_glob = "migrations,scripts"
 line_length = 88
 
-
 [tool.black]
 extend-exclude = "migrations,scripts"
-
 
 [tool.mypy]
 follow_imports = "skip"
@@ -19,11 +17,12 @@ allow_untyped_globals = true
 allow_redefinition = true
 pretty = true
 
-
 [[tool.mypy.overrides]]
 module = "tests.*"
 ignore_errors = true
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [build-system]
 requires = [

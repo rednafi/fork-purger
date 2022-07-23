@@ -11,7 +11,6 @@ from httpx import Response
 import purger.main as purger
 
 
-@pytest.mark.asyncio
 @patch.object(purger.httpx.AsyncClient, "get", autospec=True)
 async def test_get_forked_repos_ok(mock_async_get):
     mock_async_get.return_value = Response(
@@ -28,7 +27,6 @@ async def test_get_forked_repos_ok(mock_async_get):
     assert result == ["https://dummy_url.com"]
 
 
-@pytest.mark.asyncio
 @patch.object(purger.httpx.AsyncClient, "get", autospec=True)
 async def test_get_forked_repos_empty(mock_async_get):
     mock_async_get.return_value = Response(
@@ -43,7 +41,6 @@ async def test_get_forked_repos_empty(mock_async_get):
     assert result == []
 
 
-@pytest.mark.asyncio
 @patch.object(purger.httpx.AsyncClient, "get", autospec=True)
 async def test_get_forked_repos_error(mock_async_get):
     mock_async_get.return_value = Response(
@@ -59,7 +56,6 @@ async def test_get_forked_repos_error(mock_async_get):
         assert result == []
 
 
-@pytest.mark.asyncio
 @patch.object(purger.httpx.AsyncClient, "delete", autospec=True)
 async def test_delete_forked_repo_ok(mock_async_delete, capsys):
     # Test dry run ok.
@@ -91,7 +87,6 @@ async def test_delete_forked_repo_ok(mock_async_delete, capsys):
     assert "Deleting..." in out
 
 
-@pytest.mark.asyncio
 @patch.object(purger.httpx.AsyncClient, "delete", autospec=True)
 async def test_delete_forked_repo_error(mock_async_delete, capsys):
     mock_async_delete.return_value = Response(
@@ -112,7 +107,6 @@ async def test_delete_forked_repo_error(mock_async_delete, capsys):
     assert "Deleting..." in out
 
 
-@pytest.mark.asyncio
 @patch.object(purger.httpx.AsyncClient, "get", autospec=True)
 async def test_enqueue_ok(mock_async_get):
     mock_async_get.return_value = Response(
@@ -138,7 +132,6 @@ async def test_enqueue_ok(mock_async_get):
     assert event.is_set() is False
 
 
-@pytest.mark.asyncio
 @patch("purger.main.delete_forked_repo", autospec=True)
 async def test_dequeue_ok(mock_delete_forked_repo):
     mock_delete_forked_repo.return_value = None
@@ -163,7 +156,6 @@ async def test_dequeue_ok(mock_delete_forked_repo):
     assert event.is_set() is True
 
 
-@pytest.mark.asyncio
 @patch("purger.main.MAX_CONCURRENCY", default=1)
 @patch("purger.main.enqueue", autospec=True)
 @patch("purger.main.dequeue", autospec=True)
