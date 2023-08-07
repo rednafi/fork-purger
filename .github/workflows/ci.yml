@@ -1,9 +1,6 @@
 name: CI
 
 on:
-  schedule:
-    - cron: "0 0 * * 0" # Every Sunday at 0.00 UTC.
-
   push:
     branches:
       - main
